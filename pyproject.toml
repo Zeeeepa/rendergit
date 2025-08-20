@@ -28,9 +28,14 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 
+[project.optional-dependencies]
+server = ["flask>=2.3"]
+
 [project.scripts]
 rendergit = "repo_to_single_page:main"
+rendergit-serve = "server:cli"
 
 [project.urls]
 Homepage = "https://github.com/karpathy/rendergit"
 Repository = "https://github.com/karpathy/rendergit"
+

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rendergit - GitHub Repository Analyzer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            color: #333;
+        }
+        h1 {
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .radio-group {
+            margin: 1rem 0;
+        }
+        .radio-option {
+            margin-right: 1.5rem;
+            display: inline-flex;
+            align-items: center;
+        }
+        .radio-option input {
+            margin-right: 0.5rem;
+        }
+        button {
+            background-color: #0366d6;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0255b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #loading {
+            display: none;
+            margin: 1rem 0;
+            color: #666;
+        }
+        #error {
+            display: none;
+            margin: 1rem 0;
+            padding: 0.5rem 1rem;
+            background-color: #ffebee;
+            border: 1px solid #ffcdd2;
+            border-radius: 4px;
+            color: #c62828;
+        }
+        #results {
+            display: none;
+            margin-top: 2rem;
+        }
+        .stats {
+            margin: 1rem 0;
+            padding: 1rem;
+            background-color: #f6f8fa;
+            border-radius: 4px;
+        }
+        .tree-container {
+            margin: 1rem 0;
+            padding: 1rem;
+            background-color: #f6f8fa;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        pre {
+            margin: 0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.9rem;
+        }
+        .full-html-btn {
+            margin-top: 1rem;
+        }
+        .meta {
+            margin-bottom: 1rem;
+        }
+        .meta a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        .meta a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rendergit</h1>
+    <div class="subtitle">Flatten GitHub repositories for easy browsing and analysis</div>
+    
+    <div class="form-group">
+        <label for="repo-url">GitHub Repository URL:</label>
+        <input type="text" id="repo-url" placeholder="https://github.com/username/repository" required>
+    </div>
+    
+    <div class="radio-group">
+        <label>Analysis Mode:</label>
+        <div class="radio-option">
+            <input type="radio" id="structure-mode" name="mode" value="structure" checked>
+            <label for="structure-mode">Structure Only (Fast)</label>
+        </div>
+        <div class="radio-option">
+            <input type="radio" id="full-mode" name="mode" value="full">
+            <label for="full-mode">Full HTML (Slower, opens in new tab)</label>
+        </div>
+    </div>
+    
+    <button id="analyze-btn">Analyze Repository</button>
+    
+    <div id="loading">
+        <p>Processing repository... This may take a moment.</p>
+    </div>
+    
+    <div id="error"></div>
+    
+    <div id="results">
+        <div class="meta">
+            <div><strong>Repository:</strong> <a id="repo-link" href="#" target="_blank"></a></div>
+            <div><strong>HEAD commit:</strong> <span id="head-commit"></span></div>
+        </div>
+        
+        <div class="stats">
+            <div><strong>Total files:</strong> <span id="total-files"></span></div>
+            <div><strong>Rendered:</strong> <span id="rendered-count"></span></div>
+            <div><strong>Skipped binaries:</strong> <span id="skipped-binary-count"></span></div>
+            <div><strong>Skipped large files:</strong> <span id="skipped-large-count"></span></div>
+        </div>
+        
+        <h3>Directory Tree</h3>
+        <div class="tree-container">
+            <pre id="tree-text"></pre>
+        </div>
+        
+        <button id="full-html-btn" class="full-html-btn">Generate Full HTML View</button>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const repoUrlInput = document.getElementById('repo-url');
+            const structureMode = document.getElementById('structure-mode');
+            const fullMode = document.getElementById('full-mode');
+            const analyzeBtn = document.getElementById('analyze-btn');
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const resultsDiv = document.getElementById('results');
+            const repoLink = document.getElementById('repo-link');
+            const headCommit = document.getElementById('head-commit');
+            const totalFiles = document.getElementById('total-files');
+            const renderedCount = document.getElementById('rendered-count');
+            const skippedBinaryCount = document.getElementById('skipped-binary-count');
+            const skippedLargeCount = document.getElementById('skipped-large-count');
+            const treeText = document.getElementById('tree-text');
+            const fullHtmlBtn = document.getElementById('full-html-btn');
+            
+            // Handle form submission
+            analyzeBtn.addEventListener('click', function() {
+                const repoUrl = repoUrlInput.value.trim();
+                const mode = fullMode.checked ? 'full' : 'structure';
+                
+                if (!repoUrl) {
+                    showError('Please enter a GitHub repository URL');
+                    return;
+                }
+                
+                // Show loading, hide results and error
+                loadingDiv.style.display = 'block';
+                resultsDiv.style.display = 'none';
+                errorDiv.style.display = 'none';
+                analyzeBtn.disabled = true;
+                
+                // If full mode is selected, open in new tab
+                if (mode === 'full') {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/analyze';
+                    form.target = '_blank';
+                    
+                    const repoUrlField = document.createElement('input');
+                    repoUrlField.type = 'hidden';
+                    repoUrlField.name = 'repo_url';
+                    repoUrlField.value = repoUrl;
+                    
+                    const modeField = document.createElement('input');
+                    modeField.type = 'hidden';
+                    modeField.name = 'mode';
+                    modeField.value = mode;
+                    
+                    form.appendChild(repoUrlField);
+                    form.appendChild(modeField);
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+                    
+                    // Reset UI
+                    loadingDiv.style.display = 'none';
+                    analyzeBtn.disabled = false;
+                    return;
+                }
+                
+                // Structure mode - fetch data via AJAX
+                const formData = new FormData();
+                formData.append('repo_url', repoUrl);
+                formData.append('mode', mode);
+                
+                fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Failed to analyze repository');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Update UI with results
+                    repoLink.href = data.repo_url;
+                    repoLink.textContent = data.repo_url;
+                    headCommit.textContent = data.head_commit;
+                    totalFiles.textContent = data.stats.total_files;
+                    renderedCount.textContent = data.stats.rendered_count;
+                    skippedBinaryCount.textContent = data.stats.skipped_binary_count;
+                    skippedLargeCount.textContent = data.stats.skipped_large_count;
+                    treeText.textContent = data.tree_text;
+                    
+                    // Show results
+                    resultsDiv.style.display = 'block';
+                })
+                .catch(error => {
+                    showError(error.message);
+                })
+                .finally(() => {
+                    loadingDiv.style.display = 'none';
+                    analyzeBtn.disabled = false;
+                });
+            });
+            
+            // Generate full HTML button
+            fullHtmlBtn.addEventListener('click', function() {
+                const repoUrl = repoUrlInput.value.trim();
+                
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/analyze';
+                form.target = '_blank';
+                
+                const repoUrlField = document.createElement('input');
+                repoUrlField.type = 'hidden';
+                repoUrlField.name = 'repo_url';
+                repoUrlField.value = repoUrl;
+                
+                const modeField = document.createElement('input');
+                modeField.type = 'hidden';
+                modeField.name = 'mode';
+                modeField.value = 'full';
+                
+                form.appendChild(repoUrlField);
+                form.appendChild(modeField);
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+            });
+            
+            function showError(message) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
+
