@@ -495,6 +495,36 @@ def derive_temp_output_path(repo_url: str) -> pathlib.Path:
     return pathlib.Path(tempfile.gettempdir()) / filename
 
 
+def try_open_in_browser(file_path: pathlib.Path) -> bool:
+    """
+    Try to open a file in a web browser with multiple fallback options.
+    
+    Returns True if successful, False otherwise.
+    """
+    # First try the default browser
+    try:
+        if webbrowser.open(f"file://{file_path.resolve()}"):
+            return True
+    except Exception:
+        pass
+    
+    # Try specific browsers as fallbacks
+    browsers = ["firefox", "chrome", "chromium", "safari", "edge", "opera"]
+    for browser in browsers:
+        try:
+            browser_controller = webbrowser.get(browser)
+            if browser_controller.open(f"file://{file_path.resolve()}"):
+                return True
+        except Exception:
+            continue
+    
+    # If all attempts fail, print a helpful message
+    print(f"\n⚠️  Could not open a browser automatically.", file=sys.stderr)
+    print(f"📄 The HTML file has been generated at: {file_path.resolve()}", file=sys.stderr)
+    print(f"🔍 Please open it manually in your preferred browser.", file=sys.stderr)
+    return False
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Flatten a GitHub repo to a single HTML page")
     ap.add_argument("repo_url", help="GitHub repo URL (https://github.com/owner/repo[.git])")
@@ -533,7 +563,7 @@ def main() -> int:
         
         if not args.no_open:
             print(f"🌐 Opening {out_path} in browser...", file=sys.stderr)
-            webbrowser.open(f"file://{out_path.resolve()}")
+            try_open_in_browser(out_path)
         
         print(f"🗑️  Cleaning up temporary directory: {tmpdir}", file=sys.stderr)
         return 0
