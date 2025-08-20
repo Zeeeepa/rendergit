@@ -4,12 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rendergit"
-version = "0.1.0"
+version = "0.2.0"
 description = "Flatten a GitHub repo into a single static HTML page for fast skimming and Ctrl+F"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
     {name = "Andrej Karpathy"},
+    {name = "Zeeeepa"}
 ]
 dependencies = [
     "pygments",
@@ -28,9 +29,20 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 
+[project.optional-dependencies]
+server = [
+    "fastapi>=0.95.0",
+    "uvicorn>=0.22.0",
+    "jinja2>=3.1.2",
+    "python-multipart>=0.0.6",
+    "pydantic>=1.10.7",
+]
+
 [project.scripts]
-rendergit = "repo_to_single_page:main"
+rendergit = "rendergit.__main__:main"
+rendergit-server = "start_server:main"
 
 [project.urls]
-Homepage = "https://github.com/karpathy/rendergit"
-Repository = "https://github.com/karpathy/rendergit"
+Homepage = "https://github.com/Zeeeepa/rendergit"
+Repository = "https://github.com/Zeeeepa/rendergit"
+

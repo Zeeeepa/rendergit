@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - rendergit</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>rendergit</h1>
+            <p class="tagline">Error analyzing repository</p>
+        </header>
+
+        <main>
+            <div class="card error-card">
+                <h2>Error Analyzing Repository</h2>
+                <p>There was an error analyzing the repository: <code>{{ repo_url }}</code></p>
+                <div class="error-message">
+                    <pre>{{ error }}</pre>
+                </div>
+                <p>Possible reasons for this error:</p>
+                <ul>
+                    <li>The repository URL is invalid or the repository doesn't exist</li>
+                    <li>The repository is private and requires authentication</li>
+                    <li>There was a network issue while cloning the repository</li>
+                    <li>The repository is too large or contains unsupported file types</li>
+                </ul>
+                <a href="/" class="btn-primary">Try Again</a>
+            </div>
+        </main>
+
+        <footer>
+            <p>
+                rendergit is an open-source tool for rendering GitHub repositories as single HTML pages.
+                <a href="https://github.com/Zeeeepa/rendergit" target="_blank">View on GitHub</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
+

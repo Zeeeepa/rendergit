@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyzing Repository - rendergit</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <meta http-equiv="refresh" content="2">
+    <script>
+        // Poll the status API every 2 seconds
+        const taskId = "{{ task_id }}";
+        
+        async function checkStatus() {
+            try {
+                const response = await fetch(`/api/status/${taskId}`);
+                const data = await response.json();
+                
+                if (data.status === "completed") {
+                    // Redirect to the results page
+                    window.location.href = `/results/${taskId}`;
+                } else if (data.status === "error") {
+                    // Show error message
+                    document.getElementById("loading-message").innerHTML = 
+                        `<div class="error">Error: ${data.error}</div>
+                         <a href="/" class="btn-primary">Try Again</a>`;
+                    clearInterval(statusInterval);
+                }
+            } catch (error) {
+                console.error("Error checking status:", error);
+            }
+        }
+        
+        // Check status immediately and then every 2 seconds
+        checkStatus();
+        const statusInterval = setInterval(checkStatus, 2000);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>rendergit</h1>
+            <p class="tagline">Analyzing repository...</p>
+        </header>
+
+        <main>
+            <div class="card loading-card">
+                <div id="loading-message">
+                    <div class="loader"></div>
+                    <h2>Analyzing Repository</h2>
+                    <p>Please wait while we clone and analyze the repository. This may take a few moments depending on the repository size.</p>
+                    <ul class="progress-steps">
+                        <li>Cloning repository...</li>
+                        <li>Scanning files...</li>
+                        <li>Generating HTML...</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>
+                rendergit is an open-source tool for rendering GitHub repositories as single HTML pages.
+                <a href="https://github.com/Zeeeepa/rendergit" target="_blank">View on GitHub</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
+

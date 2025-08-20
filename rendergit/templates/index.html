@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rendergit - Render GitHub Repos as Single HTML Pages</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>rendergit</h1>
+            <p class="tagline">Render any GitHub repository into a single HTML page for fast skimming and analysis</p>
+        </header>
+
+        <main>
+            <div class="card">
+                <h2>Enter a GitHub Repository URL</h2>
+                <form action="/analyze" method="post">
+                    <div class="form-group">
+                        <input 
+                            type="url" 
+                            name="repo_url" 
+                            id="repo_url" 
+                            placeholder="https://github.com/username/repo" 
+                            required
+                            pattern="https?://(www\.)?github\.com/[^/]+/[^/]+/?.*"
+                            title="Please enter a valid GitHub repository URL"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="max_bytes">Max file size to render (bytes):</label>
+                        <input 
+                            type="number" 
+                            name="max_bytes" 
+                            id="max_bytes" 
+                            value="51200"
+                            min="1024"
+                            max="1048576"
+                        >
+                    </div>
+                    <button type="submit" class="btn-primary">Analyze Repository</button>
+                </form>
+            </div>
+
+            <div class="features">
+                <h2>Features</h2>
+                <ul>
+                    <li>
+                        <span class="emoji">🔍</span>
+                        <div>
+                            <h3>Instant Overview</h3>
+                            <p>See all code in one page - no more clicking through files</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="emoji">🎨</span>
+                        <div>
+                            <h3>Syntax Highlighting</h3>
+                            <p>Beautiful code highlighting for all programming languages</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="emoji">📝</span>
+                        <div>
+                            <h3>Markdown Rendering</h3>
+                            <p>README and documentation files rendered as HTML</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="emoji">🤖</span>
+                        <div>
+                            <h3>LLM-Ready Format</h3>
+                            <p>Special view optimized for pasting into AI assistants</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="emoji">🔎</span>
+                        <div>
+                            <h3>Full-Text Search</h3>
+                            <p>Use Ctrl+F to search across the entire codebase</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="emoji">📊</span>
+                        <div>
+                            <h3>Directory Tree</h3>
+                            <p>Visual overview of the repository structure</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </main>
+
+        <footer>
+            <p>
+                rendergit is an open-source tool for rendering GitHub repositories as single HTML pages.
+                <a href="https://github.com/Zeeeepa/rendergit" target="_blank">View on GitHub</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
+
