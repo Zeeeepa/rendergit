@@ -11,9 +11,11 @@ Features
 - Skips binaries and files over a size threshold (default: 50 KiB)
 - Lists skipped binaries / large files at the top
 - Includes repo metadata, counts, and a directory tree header
+- Can serve the HTML file via HTTP for access from Windows when running in WSL2
 
 Usage
     python repo_to_single_page.py https://github.com/user/repo -o out.html
+    python repo_to_single_page.py https://github.com/user/repo --serve --port 8080
 
 Requirements
     pip install pygments markdown
@@ -33,6 +35,9 @@ import subprocess
 import sys
 import tempfile
 import webbrowser
+import http.server
+import socketserver
+import threading
 from dataclasses import dataclass
 from typing import List, Tuple
 
@@ -525,12 +530,58 @@ def try_open_in_browser(file_path: pathlib.Path) -> bool:
     return False
 
 
+def serve_html_file(file_path: pathlib.Path, port: int = 8000) -> None:
+    """
+    Serve the HTML file via HTTP on the specified port.
+    
+    This is particularly useful when running in WSL2, as it allows accessing
+    the file from Windows browsers via http://localhost:port/
+    
+    The server runs until the user presses Ctrl+C.
+    """
+    file_dir = file_path.parent
+    file_name = file_path.name
+    
+    # Change to the directory containing the file
+    os.chdir(file_dir)
+    
+    # Create a simple HTTP server
+    handler = http.server.SimpleHTTPRequestHandler
+    
+    # Try to bind to the specified port, increment if busy
+    while True:
+        try:
+            with socketserver.TCPServer(("", port), handler) as httpd:
+                url = f"http://localhost:{port}/{file_name}"
+                print(f"\n🌐 Serving HTML file at: {url}", file=sys.stderr)
+                print(f"📱 Access this URL from Windows when running in WSL2", file=sys.stderr)
+                print(f"⌨️  Press Ctrl+C to stop the server", file=sys.stderr)
+                
+                # Try to open the URL in a browser
+                try:
+                    webbrowser.open(url)
+                except Exception:
+                    pass
+                
+                # Start the server
+                httpd.serve_forever()
+                break
+        except OSError as e:
+            if e.errno == 98:  # Address already in use
+                print(f"Port {port} is busy, trying {port+1}...", file=sys.stderr)
+                port += 1
+            else:
+                raise
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Flatten a GitHub repo to a single HTML page")
     ap.add_argument("repo_url", help="GitHub repo URL (https://github.com/owner/repo[.git])")
     ap.add_argument("-o", "--out", help="Output HTML file path (default: temporary file derived from repo name)")
     ap.add_argument("--max-bytes", type=int, default=MAX_DEFAULT_BYTES, help="Max file size to render (bytes); larger files are listed but skipped")
     ap.add_argument("--no-open", action="store_true", help="Don't open the HTML file in browser after generation")
+    ap.add_argument("--serve", action="store_true", help="Serve the HTML file via HTTP (useful for WSL2)")
+    ap.add_argument("--port", type=int, default=8000, help="Port to use for HTTP server (default: 8000)")
     args = ap.parse_args()
     
     # Set default output path if not provided
@@ -561,7 +612,12 @@ def main() -> int:
         file_size = out_path.stat().st_size
         print(f"✓ Wrote {bytes_human(file_size)} to {out_path}", file=sys.stderr)
         
-        if not args.no_open:
+        if args.serve:
+            # Serve the HTML file via HTTP
+            print(f"🌐 Starting HTTP server on port {args.port}...", file=sys.stderr)
+            serve_html_file(out_path, args.port)
+        elif not args.no_open:
+            # Try to open the file in a browser
             print(f"🌐 Opening {out_path} in browser...", file=sys.stderr)
             try_open_in_browser(out_path)
         
